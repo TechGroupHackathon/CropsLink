@@ -1,4 +1,4 @@
-// OCR Service for Aadhar card information extraction
+// Simplified OCR Service for Aadhar card information extraction (Version 11 approach)
 
 export interface AadharInfo {
   name?: string
@@ -17,7 +17,7 @@ export interface ValidationResult {
   error?: string
 }
 
-// Extract location components from address
+// Extract location components from address using regex patterns
 function extractLocationFromAddress(address: string): {
   location?: string
   state?: string
@@ -131,37 +131,130 @@ export async function validateAadharImage(file: File): Promise<ValidationResult>
   })
 }
 
-// Extract information from Aadhar card images using OCR
+// Simulated OCR extraction with realistic demo data (Version 11 approach)
 export async function extractAadharInfo(frontImage: File, backImage: File): Promise<AadharInfo> {
-  // In a real implementation, this would use:
-  // 1. Tesseract.js for client-side OCR
-  // 2. Google Cloud Vision API
-  // 3. AWS Textract
-  // 4. Azure Computer Vision
-  // 5. Custom trained models
+  // Simulate processing time
+  await new Promise((resolve) => setTimeout(resolve, 2000))
 
-  return new Promise((resolve) => {
-    // Simulate OCR processing time
-    setTimeout(() => {
-      // Demo extracted data - in real implementation, this would come from actual OCR
-      const demoAddress = "Village Rampur, Tehsil Kharkhoda, District Sonipat, Haryana - 131001"
-      const locationInfo = extractLocationFromAddress(demoAddress)
+  try {
+    // Validate images first
+    const frontValidation = await validateAadharImage(frontImage)
+    const backValidation = await validateAadharImage(backImage)
 
-      const extractedInfo: AadharInfo = {
+    if (!frontValidation.isValid) {
+      throw new Error(frontValidation.error)
+    }
+    if (!backValidation.isValid) {
+      throw new Error(backValidation.error)
+    }
+
+    // Generate realistic demo data based on file names or random selection
+    const demoProfiles = [
+      {
         name: "राम कुमार शर्मा",
         aadharNumber: "1234 5678 9012",
         dateOfBirth: "15/08/1985",
-        address: demoAddress,
-        ...locationInfo,
-        confidence: Math.floor(Math.random() * 20) + 80, // 80-100% confidence
-      }
+        address: "Village Rampur, Tehsil Kharkhoda, District Sonipat, Haryana - 131001",
+        confidence: 87,
+      },
+      {
+        name: "सुनीता देवी",
+        aadharNumber: "2345 6789 0123",
+        dateOfBirth: "22/03/1990",
+        address: "Village Bhiwani, Tehsil Bhiwani, District Bhiwani, Haryana - 127021",
+        confidence: 92,
+      },
+      {
+        name: "अजय पटेल",
+        aadharNumber: "3456 7890 1234",
+        dateOfBirth: "10/12/1982",
+        address: "Village Anand, Tehsil Anand, District Anand, Gujarat - 388001",
+        confidence: 89,
+      },
+      {
+        name: "प्रिया राव",
+        aadharNumber: "4567 8901 2345",
+        dateOfBirth: "05/07/1988",
+        address: "Village Mysore, Tehsil Mysore, District Mysore, Karnataka - 570001",
+        confidence: 85,
+      },
+    ]
 
-      resolve(extractedInfo)
-    }, 2000)
-  })
+    // Select a random profile for demo
+    const selectedProfile = demoProfiles[Math.floor(Math.random() * demoProfiles.length)]
+
+    // Extract location information from address
+    const locationInfo = extractLocationFromAddress(selectedProfile.address)
+
+    const extractedInfo: AadharInfo = {
+      name: selectedProfile.name,
+      aadharNumber: selectedProfile.aadharNumber,
+      dateOfBirth: selectedProfile.dateOfBirth,
+      address: selectedProfile.address,
+      ...locationInfo,
+      confidence: selectedProfile.confidence,
+    }
+
+    console.log("OCR Extraction completed:", extractedInfo)
+    return extractedInfo
+  } catch (error) {
+    console.error("OCR processing failed:", error)
+
+    // Fallback to default demo data
+    const fallbackData: AadharInfo = {
+      name: "राम कुमार शर्मा",
+      aadharNumber: "1234 5678 9012",
+      dateOfBirth: "15/08/1985",
+      address: "Village Rampur, Tehsil Kharkhoda, District Sonipat, Haryana - 131001",
+      location: "Rampur, Kharkhoda, Sonipat, Haryana",
+      state: "Haryana",
+      district: "Sonipat",
+      pincode: "131001",
+      confidence: 85,
+    }
+
+    return fallbackData
+  }
 }
 
-// Real OCR implementation example using Tesseract.js
+// Process OCR results and extract Aadhar information using regex patterns
+function processOCRResults(frontText: string, backText: string): AadharInfo {
+  const combinedText = `${frontText} ${backText}`.trim()
+
+  // Regex patterns for extracting information
+  const patterns = {
+    name: /(?:Name|नाम)[:\s]*([A-Za-z\u0900-\u097F\s]+?)(?=\n|DOB|जन्म|Aadhaar|आधार|\d{4})/i,
+    aadhar: /(\d{4}\s\d{4}\s\d{4})/,
+    dob: /(?:DOB|जन्म|Birth)[:\s]*(\d{2}\/\d{2}\/\d{4})/i,
+    address: /(?:Address|पता|S\/O|D\/O|W\/O)[:\s]*([^]+?)(?=PIN|पिन|Mobile|मोबाइल|$)/i,
+    pincode: /(\d{6})/,
+  }
+
+  // Extract information using patterns
+  const name = combinedText.match(patterns.name)?.[1]?.trim()
+  const aadharNumber = combinedText.match(patterns.aadhar)?.[1]
+  const dateOfBirth = combinedText.match(patterns.dob)?.[1]
+  const address = combinedText.match(patterns.address)?.[1]?.trim()
+
+  // Extract location components from address
+  const locationInfo = extractLocationFromAddress(address || "")
+
+  // Calculate confidence based on extracted fields
+  const fieldsFound = [name, aadharNumber, dateOfBirth, address].filter(Boolean).length
+  const confidence = Math.min((fieldsFound / 4) * 100, 95) // Max 95% confidence
+
+  return {
+    name,
+    aadharNumber,
+    dateOfBirth,
+    address,
+    ...locationInfo,
+    confidence: Math.round(confidence),
+  }
+}
+
+// Alternative: Browser-based OCR using Tesseract.js (commented out for simplicity)
+/*
 export async function extractWithTesseract(frontImage: File, backImage: File): Promise<AadharInfo> {
   try {
     // This would require installing tesseract.js
@@ -183,55 +276,10 @@ export async function extractWithTesseract(frontImage: File, backImage: File): P
     const frontText = frontResult.data.text
     const backText = backResult.data.text
 
-    // Regex patterns for Aadhar information
-    const namePattern = /Name[:\s]*([A-Za-z\s]+)/i
-    const aadharPattern = /(\d{4}\s\d{4}\s\d{4})/
-    const dobPattern = /DOB[:\s]*(\d{2}\/\d{2}\/\d{4})/i
-    const addressPattern = /Address[:\s]*([^]+?)(?=PIN|$)/i
-
-    const name = frontText.match(namePattern)?.[1]?.trim()
-    const aadharNumber = frontText.match(aadharPattern)?.[1]
-    const dateOfBirth = frontText.match(dobPattern)?.[1]
-    const address = backText.match(addressPattern)?.[1]?.trim()
-
-    const locationInfo = extractLocationFromAddress(address || "")
-
-    const extractedInfo: AadharInfo = {
-      name,
-      aadharNumber,
-      dateOfBirth,
-      address,
-      ...locationInfo,
-      confidence: Math.min(frontResult.data.confidence, backResult.data.confidence),
-    }
-
-    return extractedInfo
+    return processOCRResults(frontText, backText)
   } catch (error) {
     console.error("OCR processing failed:", error)
     throw new Error("Failed to extract information from images")
   }
 }
-
-// Cloud-based OCR implementation example
-export async function extractWithCloudVision(frontImage: File, backImage: File): Promise<AadharInfo> {
-  try {
-    const formData = new FormData()
-    formData.append("frontImage", frontImage)
-    formData.append("backImage", backImage)
-
-    const response = await fetch("/api/ocr/extract-aadhar", {
-      method: "POST",
-      body: formData,
-    })
-
-    if (!response.ok) {
-      throw new Error("OCR service failed")
-    }
-
-    const result = await response.json()
-    return result
-  } catch (error) {
-    console.error("Cloud OCR failed:", error)
-    throw new Error("Failed to process images with cloud service")
-  }
-}
+*/

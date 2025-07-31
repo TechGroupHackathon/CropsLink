@@ -12,7 +12,6 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Upload, Mic, Camera, User, Phone, CheckCircle, X, Eye, AlertCircle, Loader2, FileImage } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { saveUserData } from "@/lib/user-storage"
 import { useLanguage } from "@/lib/language-context"
 import { extractAadharInfo } from "@/lib/ocr-service"
 
@@ -287,16 +286,26 @@ export default function FarmerRegistration({ language }: FarmerRegistrationProps
 
     setIsProcessing(true)
     try {
-      const userData = {
-        ...formData,
-        role: "farmer" as const,
-        id: Date.now().toString(),
-        registrationDate: new Date().toISOString(),
-        verified: true,
-      }
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          role: "farmer",
+          ...formData,
+        }),
+      })
 
-      await saveUserData(userData)
-      router.push("/dashboard")
+      const data = await response.json()
+
+      if (data.success) {
+        // Store user data in localStorage
+        localStorage.setItem("farmconnect_user", JSON.stringify(data.user))
+        router.push("/dashboard")
+      } else {
+        setValidationErrors([data.error || "Registration failed"])
+      }
     } catch (error) {
       console.error("Registration failed:", error)
       setValidationErrors(["Registration failed. Please try again."])

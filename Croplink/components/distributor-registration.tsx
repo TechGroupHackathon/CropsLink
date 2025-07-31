@@ -12,7 +12,6 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Mic, User, MapPin, Phone, CheckCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { saveUserData } from "@/lib/user-storage"
 import { useLanguage } from "@/lib/language-context"
 
 interface DistributorRegistrationProps {
@@ -23,6 +22,7 @@ export default function DistributorRegistration({ language }: DistributorRegistr
   const [currentStep, setCurrentStep] = useState(1)
   const [voiceEnabled, setVoiceEnabled] = useState(false)
   const [isListening, setIsListening] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
   const [formData, setFormData] = useState({
     // Step 1: Voice Assistant
     voiceAssistant: false,
@@ -130,18 +130,34 @@ export default function DistributorRegistration({ language }: DistributorRegistr
     }
   }
 
-  const completeRegistration = () => {
-    // Save to JSON storage (simulating database)
-    const userData = {
-      ...formData,
-      role: "distributor" as const,
-      id: Date.now().toString(),
-      registrationDate: new Date().toISOString(),
-      verified: true,
-    }
+  const completeRegistration = async () => {
+    setIsProcessing(true)
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          role: "distributor",
+          ...formData,
+        }),
+      })
 
-    saveUserData(userData)
-    router.push("/dashboard")
+      const data = await response.json()
+
+      if (data.success) {
+        // Store user data in localStorage
+        localStorage.setItem("farmconnect_user", JSON.stringify(data.user))
+        router.push("/dashboard")
+      } else {
+        console.error("Registration failed:", data.error)
+      }
+    } catch (error) {
+      console.error("Registration failed:", error)
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   const renderStep = () => {
@@ -499,8 +515,8 @@ export default function DistributorRegistration({ language }: DistributorRegistr
         </Button>
 
         {currentStep === totalSteps ? (
-          <Button onClick={completeRegistration} className="bg-blue-600 hover:bg-blue-700">
-            {t("registration.common.complete")}
+          <Button onClick={completeRegistration} disabled={isProcessing} className="bg-blue-600 hover:bg-blue-700">
+            {isProcessing ? "Registering..." : t("registration.common.complete")}
           </Button>
         ) : (
           <Button onClick={nextStep}>{t("registration.common.next")}</Button>

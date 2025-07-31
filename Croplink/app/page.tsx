@@ -3,9 +3,10 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Wheat, Truck, Users, Shield, Mic, Search } from "lucide-react"
+import { Wheat, Truck, Users, Shield, Mic, Search, User } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useLanguage } from "@/lib/language-context"
+import Link from "next/link"
 
 export default function LandingPage() {
   const { language, setLanguage, t } = useLanguage()
@@ -67,18 +68,26 @@ export default function LandingPage() {
             <Wheat className="h-8 w-8 text-green-600" />
             <h1 className="text-2xl font-bold text-green-800">{t("landingPage.title")}</h1>
           </div>
-          <Select value={language} onValueChange={setLanguage}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {languageOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-4">
+            <Link href="/login">
+              <Button variant="outline" size="sm">
+                <User className="h-4 w-4 mr-2" />
+                Login
+              </Button>
+            </Link>
+            <Select value={language} onValueChange={setLanguage}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {languageOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </header>
 
